@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: localmart_postgres
+    environment:
+      POSTGRES_DB: localmart_dev
+      POSTGRES_USER: localmart
+      POSTGRES_PASSWORD: localmart_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - localmart_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U localmart -d localmart_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: localmart_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - localmart_network
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.7
+    container_name: localmart_meilisearch
+    environment:
+      MEILI_MASTER_KEY: localmart_meili_dev_key
+      MEILI_ENV: development
+    ports:
+      - "7700:7700"
+    volumes:
+      - meili_data:/meili_data
+    networks:
+      - localmart_network
+
+volumes:
+  postgres_data:
+  redis_data:
+  meili_data:
+
+networks:
+  localmart_network:
+    driver: bridge
