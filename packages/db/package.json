@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx src/seed.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.30.0",
@@ -24,6 +25,7 @@
   "devDependencies": {
     "@localmart/config": "workspace:*",
     "drizzle-kit": "^0.21.0",
+    "tsx": "^4.0.0",
     "typescript": "^5.4.0"
   }
 }

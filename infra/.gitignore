@@ -1,0 +1,21 @@
+# Local Terraform state (bootstrap uses local state — do not commit)
+infra/bootstrap/terraform.tfstate
+infra/bootstrap/terraform.tfstate.backup
+
+# Terraform working directories
+**/.terraform/
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Sensitive variable files
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI config
+.terraformrc
+terraform.rc

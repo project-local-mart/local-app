@@ -7,7 +7,10 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "clean": "turbo run clean"
+    "clean": "turbo run clean",
+    "db:generate": "turbo run db:generate --filter=@localmart/db",
+    "db:migrate": "turbo run db:migrate --filter=@localmart/db",
+    "db:seed": "turbo run db:seed --filter=@localmart/db"
   },
   "devDependencies": {
     "turbo": "^2.0.0"

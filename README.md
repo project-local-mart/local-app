@@ -22,7 +22,7 @@ The platform exists because local retail deserves better infrastructure. Small b
 | Layer              | Technology                          |
 |--------------------|-------------------------------------|
 | Consumer frontend  | Next.js 14 (App Router), Tailwind   |
-| Merchant app       | React Native, Expo SDK 51           |
+| Merchant app       | React Native, Expo SDK 51 *(planned)*|
 | Backend API        | Hono.js on Node.js                  |
 | Database           | PostgreSQL 16 with PostGIS          |
 | ORM                | Drizzle                             |
@@ -67,7 +67,7 @@ Once running:
 localmart/
 ├── apps/
 │   ├── web/          # Next.js 14 consumer frontend
-│   ├── merchant/     # Expo React Native merchant app
+│   ├── merchant/     # Expo React Native merchant app (planned)
 │   └── api/          # Hono.js backend API
 ├── packages/
 │   ├── types/        # Shared TypeScript domain types

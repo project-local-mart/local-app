@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo \"Exit: $?\")",
+      "Bash(pnpm --filter @localmart/web typecheck)",
+      "Bash(pnpm --filter @localmart/db db:generate)",
+      "Bash(pnpm --filter @localmart/db build)"
+    ]
+  }
+}

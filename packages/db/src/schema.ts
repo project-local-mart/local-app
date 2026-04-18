@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import {
   pgTable,
   text,
@@ -44,6 +45,17 @@ export const posProviderEnum = pgEnum('pos_provider', [
   'clover',
 ])
 
+// Users table — mirrors Clerk user, synced via webhook
+export const users = pgTable('users', {
+  id: text('id').primaryKey(),
+  clerkId: text('clerk_id').notNull().unique(),
+  email: text('email').notNull().unique(),
+  role: userRoleEnum('role').notNull().default('consumer'),
+  communityId: text('community_id'),  // FK added below after communities is defined
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
 // Communities table
 export const communities = pgTable('communities', {
   id: text('id').primaryKey(),
@@ -67,6 +79,7 @@ export const moderators = pgTable('moderators', {
 // Merchants table
 export const merchants = pgTable('merchants', {
   id: text('id').primaryKey(),
+  userId: text('user_id'),  // FK to users.id; nullable for legacy records
   communityId: text('community_id')
     .notNull()
     .references(() => communities.id),
@@ -100,8 +113,8 @@ export const products = pgTable('products', {
   stockQuantity: integer('stock_quantity').notNull(),
   sku: text('sku'),
   barcode: text('barcode'),
-  images: text('images').array().notNull().default([]),
-  categories: text('categories').array().notNull().default([]),
+  images: text('images').array().notNull().default(sql`'{}'`),
+  categories: text('categories').array().notNull().default(sql`'{}'`),
   source: productSourceEnum('source').notNull().default('manual'),
   externalId: text('external_id'),
   moderationStatus: moderationStatusEnum('moderation_status')

@@ -1,6 +1,17 @@
 // User roles
 export type UserRole = 'platform_admin' | 'moderator' | 'merchant' | 'consumer'
 
+// User — mirrors the Clerk user record; synced via Clerk webhook
+export interface User {
+  id: string
+  clerkId: string
+  email: string
+  role: UserRole
+  communityId: string | null  // set for moderators; null for platform_admin and consumers
+  createdAt: Date
+  updatedAt: Date
+}
+
 // Community — a named geographic area covering one or more zip codes
 export interface Community {
   id: string
@@ -22,6 +33,7 @@ export interface Moderator {
 // Merchant — a local business approved within a community
 export interface Merchant {
   id: string
+  userId: string | null  // FK to users.id; null for legacy records
   communityId: string
   businessName: string
   ownerName: string
