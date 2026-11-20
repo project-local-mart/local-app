@@ -57,7 +57,7 @@ AWS infrastructure provisioned (Terraform modules exist as scaffolding only).
 | Task queue         | BullMQ + Redis                       | Redis 7 *(running, unused)* |
 | Object storage      | MinIO locally → AWS S3 in cloud      | *(running, unused)* |
 | Monorepo tooling   | Turborepo + pnpm workspaces           | Turbo ^2.0 / pnpm 9.0 |
-| Node               | Node.js                              | ≥20             |
+| Node               | Node.js                              | 22 (`.nvmrc`, `engines`) |
 
 ## Monorepo structure
 

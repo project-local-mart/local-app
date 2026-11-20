@@ -25,9 +25,9 @@ define CHECK_NODE
 		echo ""; \
 		echo "  ERROR: node not found on PATH."; \
 		echo ""; \
-		echo "  If you use nvm, run:  nvm install  (reads .nvmrc → Node 20)"; \
+		echo "  If you use nvm, run:  nvm install  (reads .nvmrc → Node 22)"; \
 		echo "  If you use mise/asdf, run: mise install"; \
-		echo "  Or install Node 20 directly: https://nodejs.org"; \
+		echo "  Or install Node 22 directly: https://nodejs.org"; \
 		echo ""; \
 		exit 1; \
 	fi

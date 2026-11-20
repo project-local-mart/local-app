@@ -156,7 +156,8 @@ project before showing it.
 1. **Add New → Project**, import the repository, and leave **Root Directory**
    at the repository root. Vercel reads the services from `vercel.json`; there
    is no framework preset to choose.
-2. Set **Settings → General → Node.js Version** to 22.
+2. Node.js 22 is pinned by `engines.node` (`22.x`) in `package.json`, which
+   takes precedence over the dashboard's Node.js Version setting.
 3. Add these environment variables for Production and Preview. All services in
    the project share them:
 
