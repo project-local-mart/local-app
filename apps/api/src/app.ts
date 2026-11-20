@@ -22,10 +22,9 @@ const app = new Hono()
 
 app.use('*', honoLogger())
 
-// On Vercel Services the public rewrite forwards `/api/*` to this service
-// without stripping the prefix, so the routes are served under `/api`. They
-// are also served at the root for local development (`make dev`) and for
-// internal calls from the web service over its service binding.
+// Routes are served at the root (local development, the standalone Vercel API
+// project) and under `/api`, so the API also works behind a same-domain `/api`
+// rewrite, such as Vercel Services, which forwards the prefix unchanged.
 app.route('/api', routes)
 app.route('/', routes)
 

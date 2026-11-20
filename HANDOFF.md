@@ -10,9 +10,9 @@ rules, and `docs/DEVELOPMENT.md` for the intended setup workflow.
 
 - Local development: self-hosted Coder Community on this Mac, using Docker
   Desktop and a repository Dev Container.
-- Public demo: one Vercel Hobby project (Services) for the Next.js web app and
-  Hono API, Supabase Free for PostgreSQL (chosen 2026-11-20 over Neon), and
-  Clerk Free for authentication.
+- Public demo: two Vercel Hobby projects for the Next.js web app and Hono API,
+  Supabase Free for PostgreSQL (chosen 2026-11-20 over Neon), and Clerk Free
+  for authentication.
 - Clerk: use the **development** instance keys (`pk_test_…`/`sk_test_…`) for
   both local and the Vercel demo. Clerk production instances require an owned
   custom domain and do not work on `*.vercel.app`. Switch to a production
@@ -69,37 +69,36 @@ run once on the host.
 - The session pooler URL is in the local `.env` as `SUPABASE_SESSION_URL`
   (used only for migrations/seed from the dev container).
 
-## Status: Vercel demo — repository READY (Services), project NOT created
+## Status: Vercel demo — two projects
 
-The deployment is one Vercel project using Vercel Services (beta). Root
-`vercel.json` declares `web` (apps/web, Next.js) and `api` (apps/api, Hono),
-routes `/api` and `/api/*` to `api` and everything else to `web`, and binds
-`web` to `api` as `API_URL` (injected at runtime; never set it manually).
+A single project with Vercel Services was tried (PR #4) and failed at deploy
+time: "Edge Runtime is not supported in services. Service "web" produced Edge
+Function output "src/middleware"". On Next.js 14 middleware always runs on
+Edge, and Clerk's `auth()` requires `clerkMiddleware`, so the middleware cannot
+be dropped. An offline `vercel build` does not catch this; the check runs on
+Vercel's side.
 
-- The Hono app serves its routes both at `/` and under `/api`, because Vercel
-  forwards the prefix unchanged.
-- The web app reads the server-only `API_URL` via `apps/web/src/lib/api-url.ts`
-  (fallback `http://localhost:3001`). `NEXT_PUBLIC_API_URL` is no longer used.
-- Verified offline with `vercel build` (CLI 66.5.0) on a clean copy: both
-  services build, Turbo compiles workspace packages first, the output has the
-  expected routes, binding, 1 API function and the web functions.
-- `vercel dev --local` is not a reliable check here: it skips build commands
-  and runs both services' pnpm installs concurrently.
+The deployment is therefore two projects (see "Public prototype on Vercel" in
+`docs/DEVELOPMENT.md`):
 
-Remaining steps (user's Vercel login required): follow "Vercel project" in
-`docs/DEVELOPMENT.md` — one project at the repository root, env vars
-`DATABASE_URL` (transaction pooler, 6543), Clerk keys, `LOG_LEVEL`; deploy;
-check `/api/health`; then Clerk origin + webhook to `/api/users` and
-`CLERK_WEBHOOK_SECRET`; then a public end-to-end smoke test.
+- `apps/api` project: `apps/api/vercel.json` (Hono). Env: `DATABASE_URL`
+  (Supabase transaction pooler, 6543), `CLERK_SECRET_KEY`,
+  `CLERK_WEBHOOK_SECRET`, `LOG_LEVEL=info`.
+- `apps/web` project: `apps/web/vercel.json` (Next.js). Env: `API_URL` (API
+  project URL; server-only, read at request time),
+  `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`.
+- The API serves routes at `/` and under `/api`; either works for the Clerk
+  webhook (`https://<api-host>/users`).
 
-Fallback if Services misbehaves: two projects rooted at `apps/api` and
-`apps/web`, with per-app `vercel.json` build commands as in commit cc3d287.
+Revisit Services after upgrading to Next.js 15.5+ (Node.js middleware) and
+Clerk v6 (async `auth()`).
 
 ## Known follow-ups
 
-- `apps/api` has no ESLint config, so `pnpm lint` fails for it. The shared
-  `packages/config/eslint-base.js` exists but is not wired up; enabling it
-  will likely surface real lint errors. (`apps/web` also has no config.)
+- Upgrade Next.js 14 → 15.5+/16 and Clerk v5 → v6 (async `auth()`), then
+  consider moving back to a single Vercel Services project. `apps/web` lint
+  uses only `next/core-web-vitals`; it could also extend the shared strict
+  config.
 - The merchant page's back link goes to `/` instead of the merchant's
   community; a proper link needs the community slug (e.g. from the API).
 - `GET /merchants` returns owner email/phone publicly; decide whether that is

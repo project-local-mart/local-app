@@ -2,8 +2,8 @@
 
 Localmart uses a repository Dev Container so the same development environment
 works in VS Code-compatible clients and in a local Coder Community deployment.
-The public prototype is one Vercel project (using Vercel Services) backed by a
-Supabase PostgreSQL database.
+The public prototype is two Vercel projects (web and API) backed by a Supabase
+PostgreSQL database.
 
 ## Local Coder Community
 
@@ -105,17 +105,22 @@ services, runs migrations, and inserts demo data. Add Clerk development keys to
 
 ## Public prototype on Vercel
 
-The prototype is a single Vercel project that uses
-[Vercel Services](https://vercel.com/docs/services) (beta, available on Hobby).
-The root `vercel.json` declares two services built from this repository:
+The prototype is two Vercel projects created from this repository:
 
-| Service | Root       | Public path        | Notes                                            |
-|---------|------------|--------------------|--------------------------------------------------|
-| `web`   | `apps/web` | everything else    | Next.js; calls `api` over a private binding      |
-| `api`   | `apps/api` | `/api`, `/api/*`   | Hono; entry point `src/app.ts`                   |
+| Project         | Root directory | Framework | Config                 |
+|-----------------|----------------|-----------|------------------------|
+| `localmart-api` | `apps/api`     | Hono      | `apps/api/vercel.json` |
+| `localmart-web` | `apps/web`     | Next.js   | `apps/web/vercel.json` |
 
-Each service's build command runs Turbo from the repository root so
-`@localmart/types` and `@localmart/db` are compiled first.
+Each project's build command runs Turbo from the repository root so
+`@localmart/types` and `@localmart/db` are compiled first. Keep **Include files
+outside the root directory in the Build Step** enabled (the default).
+
+A single project using Vercel Services is not possible yet: services reject
+Edge Function output, and on Next.js 14 the Clerk middleware
+(`apps/web/src/middleware.ts`) always runs on the Edge runtime. Next.js 15.5+
+can run middleware on Node.js, so revisit Services after upgrading Next.js and
+Clerk.
 
 ### Database
 
@@ -151,38 +156,49 @@ Free Supabase projects pause after about a week without activity and must be
 restored from the dashboard. Visit the demo occasionally, or restore the
 project before showing it.
 
-### Vercel project
+### API project
 
-1. **Add New → Project**, import the repository, and leave **Root Directory**
-   at the repository root. Vercel reads the services from `vercel.json`; there
-   is no framework preset to choose.
-2. Node.js 22 is pinned by `engines.node` (`22.x`) in `package.json`, which
-   takes precedence over the dashboard's Node.js Version setting.
-3. Add these environment variables for Production and Preview. All services in
-   the project share them:
+1. **Add New → Project**, import the repository, set **Root Directory** to
+   `apps/api`. The framework (Hono) and build command come from
+   `apps/api/vercel.json`.
+2. Environment variables (Production and Preview):
 
-   | Name                                | Value                                          |
-   |-------------------------------------|------------------------------------------------|
-   | `DATABASE_URL`                      | Supabase **transaction pooler** URL (port 6543) |
-   | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key                          |
-   | `CLERK_SECRET_KEY`                  | Clerk secret key                               |
-   | `CLERK_WEBHOOK_SECRET`              | Clerk webhook signing secret (after step 5)    |
-   | `LOG_LEVEL`                         | `info`                                         |
+   | Name                   | Value                                           |
+   |------------------------|-------------------------------------------------|
+   | `DATABASE_URL`         | Supabase **transaction pooler** URL (port 6543) |
+   | `CLERK_SECRET_KEY`     | Clerk secret key                                |
+   | `CLERK_WEBHOOK_SECRET` | Clerk webhook signing secret (after setup)      |
+   | `LOG_LEVEL`            | `info`                                          |
 
-   Do not set `API_URL`: the `web` service's binding injects it at runtime,
-   pointing at the same deployment's `api` service, so preview deployments
-   pair with their own API.
-4. Deploy, then confirm `https://<host>/api/health` returns a JSON object with
-   `status: "ok"` and that the home page lists the Portland community.
-5. In Clerk, add the deployment URL to the allowed origins and create a user
-   webhook to `https://<host>/api/users`. Store its signing secret as
-   `CLERK_WEBHOOK_SECRET` and redeploy.
+3. Deploy and confirm `https://<api-host>/health` returns a JSON object with
+   `status: "ok"`.
 
-The API serves the same routes at `/` and under `/api`: Vercel forwards the
-`/api` prefix unchanged, while local development and binding calls use the
-bare paths. `apps/api/src/index.ts` remains the local Node entry point.
+`apps/api/src/app.ts` is the Vercel Function entry point (Vercel checks
+`src/app.ts` before `src/index.ts`); `src/index.ts` remains the local Node
+server. Routes are served at `/` and also under `/api`.
 
-To check the build without deploying, run `npx vercel@latest build` in a clean
-checkout after creating a placeholder `.vercel/project.json`; `vercel dev`
-does not run build commands, so build the workspace packages first if you use
-it.
+### Web project
+
+1. Import the repository again as a second project, with **Root Directory**
+   `apps/web`. The framework (Next.js) and build command come from
+   `apps/web/vercel.json`.
+2. Environment variables (Production and Preview):
+
+   | Name                                | Value                                           |
+   |-------------------------------------|-------------------------------------------------|
+   | `API_URL`                           | API project's production URL, no trailing slash |
+   | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key                           |
+   | `CLERK_SECRET_KEY`                  | Clerk secret key                                |
+
+   `API_URL` is server-only and read at request time. Preview deployments of
+   the web project also use the production API.
+3. Deploy and confirm the home page lists the Portland community.
+
+### Clerk
+
+Add the web project's URL to the Clerk application's allowed origins, and
+create a user webhook to `https://<api-host>/users`. Store its signing secret
+as `CLERK_WEBHOOK_SECRET` in the API project and redeploy it.
+
+Node.js 22 is pinned by `engines.node` (`22.x`) in `package.json`, which takes
+precedence over the dashboard's Node.js Version setting.
