@@ -32,16 +32,6 @@ router.get('/', async (c) => {
   return c.json(rows)
 })
 
-// GET /merchants/:id
-router.get('/:id', async (c) => {
-  const [merchant] = await db
-    .select()
-    .from(merchants)
-    .where(eq(merchants.id, c.req.param('id')))
-  if (!merchant) return c.json({ error: 'Not found' }, 404)
-  return c.json(merchant)
-})
-
 // GET /merchants/me — merchant record for the authenticated user
 router.get('/me', verifyAuth, async (c) => {
   const { id: userId } = getUser(c)
@@ -50,6 +40,16 @@ router.get('/me', verifyAuth, async (c) => {
     .from(merchants)
     .where(eq(merchants.userId, userId))
   if (!merchant) return c.json({ error: 'No merchant record found' }, 404)
+  return c.json(merchant)
+})
+
+// GET /merchants/:id
+router.get('/:id', async (c) => {
+  const [merchant] = await db
+    .select()
+    .from(merchants)
+    .where(eq(merchants.id, c.req.param('id')))
+  if (!merchant) return c.json({ error: 'Not found' }, 404)
   return c.json(merchant)
 })
 

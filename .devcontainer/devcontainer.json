@@ -1,0 +1,58 @@
+{
+  "name": "Localmart",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "hostRequirements": {
+    "cpus": 2,
+    "memory": "4gb",
+    "storage": "16gb"
+  },
+  "mounts": [
+    "source=localmart-node-modules,target=/workspaces/local-app/node_modules,type=volume",
+    "source=localmart-pnpm-store,target=/home/node/.local/share/pnpm/store,type=volume"
+  ],
+  "runArgs": ["--add-host=host.docker.internal:host-gateway"],
+  "forwardPorts": [3000, 3001, 5432, 7700, 9001],
+  "portsAttributes": {
+    "3000": {
+      "label": "Localmart web"
+    },
+    "3001": {
+      "label": "Localmart API"
+    },
+    "5432": {
+      "label": "PostgreSQL"
+    },
+    "7700": {
+      "label": "Meilisearch"
+    },
+    "9001": {
+      "label": "MinIO console"
+    }
+  },
+  "postCreateCommand": "sudo chown node:node /workspaces/local-app/node_modules /home/node/.local /home/node/.local/share /home/node/.local/share/pnpm /home/node/.local/share/pnpm/store && sudo corepack enable && sudo corepack prepare pnpm@9.0.0 --activate && if [ ! -f .env ]; then cp .env.example .env && sed -i 's/@localhost:/@host.docker.internal:/' .env; fi && CI=true pnpm install --frozen-lockfile",
+  "remoteUser": "node",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss"
+      ]
+    },
+    "coder": {
+      "autoStart": true,
+      "name": "localmart",
+      "displayApps": {
+        "vscode": true,
+        "vscode_insiders": true,
+        "web_terminal": true
+      }
+    }
+  }
+}
