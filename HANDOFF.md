@@ -62,10 +62,9 @@ run once on the host.
 ## Status: Supabase — DONE
 
 - Supabase Free project in US East (`aws-1-us-east-1` pooler), PostgreSQL 17.
-- Migrations 0000–0001 applied and seed loaded (2026-11-20). Migration
-  `0002_enable_rls` is on the `feat/vercel-services` branch and still needs to
-  be applied once merged:
-  `DATABASE_URL=<session pooler URL> pnpm db:migrate`.
+- Migrations 0000–0002 applied and seed loaded (2026-11-20). `0002_enable_rls`
+  is verified: RLS is on for all six tables, the owner role still reads data,
+  and Supabase's `anon` role is denied on every table.
 - Data API disabled by the user. RLS migration adds a second layer.
 - The session pooler URL is in the local `.env` as `SUPABASE_SESSION_URL`
   (used only for migrations/seed from the dev container).
