@@ -28,10 +28,10 @@ export default async function MerchantPage({ params }: Props) {
     <div>
       <div className="mb-8">
         <Link
-          href={`/communities/${merchant.communityId}`}
+          href="/"
           className="text-sm text-emerald-600 hover:underline"
         >
-          ← Back to community
+          ← All communities
         </Link>
         <h1 className="mt-2 text-3xl font-bold text-stone-900">{merchant.businessName}</h1>
         <p className="mt-1 text-stone-500">

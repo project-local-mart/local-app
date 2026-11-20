@@ -1,5 +1,12 @@
 SHELL := /bin/bash
 
+# Make application environment values available to pnpm/turbo processes. The
+# file is local-only and is created from .env.example by `make setup`.
+ifneq (,$(wildcard .env))
+  include .env
+  export
+endif
+
 .PHONY: setup up down dev db-generate db-migrate db-seed db-reset clean logs ps
 
 # Load nvm if node is not already on PATH (common when running make from an IDE terminal)
