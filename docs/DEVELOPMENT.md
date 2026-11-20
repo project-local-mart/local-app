@@ -2,7 +2,8 @@
 
 Localmart uses a repository Dev Container so the same development environment
 works in VS Code-compatible clients and in a local Coder Community deployment.
-The public prototype uses two Vercel projects and a Supabase PostgreSQL database.
+The public prototype is one Vercel project (using Vercel Services) backed by a
+Supabase PostgreSQL database.
 
 ## Local Coder Community
 
@@ -104,7 +105,17 @@ services, runs migrations, and inserts demo data. Add Clerk development keys to
 
 ## Public prototype on Vercel
 
-The prototype consists of two projects created from the same Git repository.
+The prototype is a single Vercel project that uses
+[Vercel Services](https://vercel.com/docs/services) (beta, available on Hobby).
+The root `vercel.json` declares two services built from this repository:
+
+| Service | Root       | Public path        | Notes                                            |
+|---------|------------|--------------------|--------------------------------------------------|
+| `web`   | `apps/web` | everything else    | Next.js; calls `api` over a private binding      |
+| `api`   | `apps/api` | `/api`, `/api/*`   | Hono; entry point `src/app.ts`                   |
+
+Each service's build command runs Turbo from the repository root so
+`@localmart/types` and `@localmart/db` are compiled first.
 
 ### Database
 
@@ -116,7 +127,7 @@ The prototype consists of two projects created from the same Git repository.
    - **Session pooler** (port `5432`): for migrations and seeding from a
      local shell. Supabase's direct connection is IPv6-only on the free plan,
      so use the session pooler from home networks.
-   - **Transaction pooler** (port `6543`): for the Vercel API project's
+   - **Transaction pooler** (port `6543`): for the Vercel project's
      `DATABASE_URL`. `packages/db` disables prepared statements on Vercel
      because transaction-mode pooling does not support them.
 4. From a trusted local shell, run migrations and seed the demo data with the
@@ -129,36 +140,48 @@ DATABASE_URL='postgresql://...:5432/postgres' pnpm db:seed
 
 Do not put connection strings in the repository.
 
+Turn off Supabase's Data API (**Project Settings → Data API**). Localmart only
+reaches the database through `apps/api`, and the auto-generated REST API would
+otherwise expose the `public` schema to anyone holding the project's anon key.
+Migration `0002_enable_rls` also enables deny-by-default row level security on
+every table as a second layer; the API connects as the table owner and is
+unaffected.
+
 Free Supabase projects pause after about a week without activity and must be
 restored from the dashboard. Visit the demo occasionally, or restore the
 project before showing it.
 
-### API project
+### Vercel project
 
-Create a Vercel project with:
+1. **Add New → Project**, import the repository, and leave **Root Directory**
+   at the repository root. Vercel reads the services from `vercel.json`; there
+   is no framework preset to choose.
+2. Set **Settings → General → Node.js Version** to 22.
+3. Add these environment variables for Production and Preview. All services in
+   the project share them:
 
-- Root directory: `apps/api`
-- Framework preset: Hono
-- Environment variables: `DATABASE_URL`, `CLERK_SECRET_KEY`,
-  `CLERK_WEBHOOK_SECRET`, `LOG_LEVEL=info`
+   | Name                                | Value                                          |
+   |-------------------------------------|------------------------------------------------|
+   | `DATABASE_URL`                      | Supabase **transaction pooler** URL (port 6543) |
+   | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key                          |
+   | `CLERK_SECRET_KEY`                  | Clerk secret key                               |
+   | `CLERK_WEBHOOK_SECRET`              | Clerk webhook signing secret (after step 5)    |
+   | `LOG_LEVEL`                         | `info`                                         |
 
-The default export in `apps/api/src/app.ts` is the Vercel Function entry point.
-`apps/api/src/index.ts` remains the local and container Node entry point.
+   Do not set `API_URL`: the `web` service's binding injects it at runtime,
+   pointing at the same deployment's `api` service, so preview deployments
+   pair with their own API.
+4. Deploy, then confirm `https://<host>/api/health` returns a JSON object with
+   `status: "ok"` and that the home page lists the Portland community.
+5. In Clerk, add the deployment URL to the allowed origins and create a user
+   webhook to `https://<host>/api/users`. Store its signing secret as
+   `CLERK_WEBHOOK_SECRET` and redeploy.
 
-After deployment, confirm that `https://<api-host>/health` returns a JSON object
-with `status: "ok"`.
+The API serves the same routes at `/` and under `/api`: Vercel forwards the
+`/api` prefix unchanged, while local development and binding calls use the
+bare paths. `apps/api/src/index.ts` remains the local Node entry point.
 
-### Web project
-
-Create a second Vercel project with:
-
-- Root directory: `apps/web`
-- Framework preset: Next.js
-- Environment variables: `NEXT_PUBLIC_API_URL`,
-  `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`
-
-Set `NEXT_PUBLIC_API_URL` to the API project's production URL. Configure the
-same values for Preview and Production unless a separate preview API is added.
-
-Finally, add both Vercel URLs to the Clerk application's allowed origins and
-configure Clerk's user webhook to call `https://<api-host>/users`.
+To check the build without deploying, run `npx vercel@latest build` in a clean
+checkout after creating a placeholder `.vercel/project.json`; `vercel dev`
+does not run build commands, so build the workspace packages first if you use
+it.

@@ -4,6 +4,7 @@
   "globalPassThroughEnv": [
     "DATABASE_URL",
     "API_PORT",
+    "API_URL",
     "LOG_LEVEL",
     "CLERK_SECRET_KEY",
     "CLERK_WEBHOOK_SECRET",

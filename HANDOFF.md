@@ -10,16 +10,17 @@ rules, and `docs/DEVELOPMENT.md` for the intended setup workflow.
 
 - Local development: self-hosted Coder Community on this Mac, using Docker
   Desktop and a repository Dev Container.
-- Public demo: Vercel Hobby for the Next.js web app and Hono API, Supabase Free
-  for PostgreSQL (chosen 2026-11-20 over Neon; the user has contacts there), and Clerk Free for authentication.
+- Public demo: one Vercel Hobby project (Services) for the Next.js web app and
+  Hono API, Supabase Free for PostgreSQL (chosen 2026-11-20 over Neon), and
+  Clerk Free for authentication.
 - Clerk: use the **development** instance keys (`pk_test_…`/`sk_test_…`) for
   both local and the Vercel demo. Clerk production instances require an owned
   custom domain and do not work on `*.vercel.app`. Switch to a production
   instance only if a domain is bought.
 - Expected early hosting cost: $0, excluding an optional domain.
 
-No Vercel or Supabase resources have been created yet. A Clerk development
-application exists and its keys are in the local, ignored `.env`.
+A Supabase project and a Clerk development application exist; their
+secrets are in the local, ignored `.env`. No Vercel project exists yet.
 
 ## Status: local Coder environment — DONE
 
@@ -58,42 +59,42 @@ Before the rebuild, the container's `pnpm install` overwrote the host
 Running pnpm/turbo/next directly on the Mac will fail until `pnpm install` is
 run once on the host.
 
-## Status: Vercel demo — repository READY, cloud resources NOT created
+## Status: Supabase — DONE
 
-Added `apps/api/vercel.json` and `apps/web/vercel.json`. Each sets the
-framework and a build command that runs Turbo from the repo root so workspace
-packages are compiled first. Verified in a fresh copy of the repo inside the
-Dev Container:
+- Supabase Free project in US East (`aws-1-us-east-1` pooler), PostgreSQL 17.
+- Migrations 0000–0001 applied and seed loaded (2026-11-20). Migration
+  `0002_enable_rls` is on the `feat/vercel-services` branch and still needs to
+  be applied once merged:
+  `DATABASE_URL=<session pooler URL> pnpm db:migrate`.
+- Data API disabled by the user. RLS migration adds a second layer.
+- The session pooler URL is in the local `.env` as `SUPABASE_SESSION_URL`
+  (used only for migrations/seed from the dev container).
 
-- `turbo run build --filter=@localmart/api^...` succeeds, and the Hono app from
-  `src/app.ts` serves `/communities` under `NODE_ENV=production`. Vercel's Hono
-  detection checks `src/app.ts` before `src/index.ts`, so it picks the
-  exported app rather than the Node server.
-- `turbo run build --filter=@localmart/web` (full `next build`) succeeds.
+## Status: Vercel demo — repository READY (Services), project NOT created
 
-CORS is **not** required: every web→API call happens in server components or
-server actions (`apps/web/src/lib/api.ts`, `api-auth.ts`), never in the browser.
+The deployment is one Vercel project using Vercel Services (beta). Root
+`vercel.json` declares `web` (apps/web, Next.js) and `api` (apps/api, Hono),
+routes `/api` and `/api/*` to `api` and everything else to `web`, and binds
+`web` to `api` as `API_URL` (injected at runtime; never set it manually).
 
-`packages/db/src/client.ts` disables prepared statements when `VERCEL` is
-set, as Supabase's transaction pooler requires.
+- The Hono app serves its routes both at `/` and under `/api`, because Vercel
+  forwards the prefix unchanged.
+- The web app reads the server-only `API_URL` via `apps/web/src/lib/api-url.ts`
+  (fallback `http://localhost:3001`). `NEXT_PUBLIC_API_URL` is no longer used.
+- Verified offline with `vercel build` (CLI 66.5.0) on a clean copy: both
+  services build, Turbo compiles workspace packages first, the output has the
+  expected routes, binding, 1 API function and the web functions.
+- `vercel dev --local` is not a reliable check here: it skips build commands
+  and runs both services' pnpm installs concurrently.
 
-Remaining steps (need the user's Vercel/Supabase logins and approval):
+Remaining steps (user's Vercel login required): follow "Vercel project" in
+`docs/DEVELOPMENT.md` — one project at the repository root, env vars
+`DATABASE_URL` (transaction pooler, 6543), Clerk keys, `LOG_LEVEL`; deploy;
+check `/api/health`; then Clerk origin + webhook to `/api/users` and
+`CLERK_WEBHOOK_SECRET`; then a public end-to-end smoke test.
 
-1. Create a Supabase Free project; copy the session pooler (5432) and
-   transaction pooler (6543) connection strings. PostGIS is optional: the
-   schema does not use it yet.
-2. Run `pnpm db:migrate` and `pnpm db:seed` against the session pooler URL
-   from a trusted shell.
-3. Create Vercel project for `apps/api` (root directory `apps/api`); set
-   `DATABASE_URL` (transaction pooler, port 6543), `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SECRET`, `LOG_LEVEL=info`.
-   Deploy, confirm `/health`.
-4. Create Vercel project for `apps/web` (root directory `apps/web`); set
-   `NEXT_PUBLIC_API_URL` (API production URL),
-   `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`. Deploy.
-5. In Clerk: add the web origin; create the user webhook to
-   `https://<api-host>/users`; put its signing secret in the API project's
-   `CLERK_WEBHOOK_SECRET` and redeploy the API.
-6. Public end-to-end smoke test (browse, sign up, merchant apply).
+Fallback if Services misbehaves: two projects rooted at `apps/api` and
+`apps/web`, with per-app `vercel.json` build commands as in commit cc3d287.
 
 ## Known follow-ups
 
