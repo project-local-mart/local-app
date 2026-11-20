@@ -4,12 +4,11 @@
  */
 import { auth } from '@clerk/nextjs/server'
 import type { Community, Merchant, Product } from '@localmart/types'
-
-const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3001'
+import { apiUrl } from './api-url'
 
 async function authFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await auth().getToken()
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(apiUrl(path), {
     ...init,
     headers: {
       'Content-Type': 'application/json',
