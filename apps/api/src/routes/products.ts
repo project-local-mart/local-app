@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { eq, and } from 'drizzle-orm'
 import { db } from '../lib/db'
 import { products } from '@localmart/db'
-import { verifyAuth, getUser } from '../middleware/auth'
+import { verifyAuth } from '../middleware/auth'
 import { requireRole } from '../middleware/rbac'
 import { parseBody } from '../lib/validate'
 
